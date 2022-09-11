@@ -1,0 +1,59 @@
+---
+#info: Recursivly copy folder from remote host to the ansible host
+- name: 'Check src {{ rfetch_src }}'
+  stat:
+    path: '{{ rfetch_src }}'
+  register: rfetch_src_path
+  failed_when: rfetch_src_path.stat.exists == False
+
+- name: 'Check des {{ rfetch_des }}'
+  connection: local
+  stat:
+    path: '{{ rfetch_des }}'
+  register: rfetch_des_path
+  failed_when: rfetch_des_path.stat.exists == False
+
+- name: Set temp file ID
+  connection: local
+  shell: tr -dc 0-9 </dev/urandom | head -c 8 ; echo ''
+  register: rfetch_id
+  changed_when: false
+
+- name: Set temp file
+  set_fact:
+    rfetch_tmp_file: 'rfetch_{{ inventory_hostname }}_{{ rfetch_id.stdout }}.tar.bz2'
+
+- name: Packing archive
+  archive:
+    path: '{{ rfetch_src }}'
+    dest: '{{ rfetch_tmp_dir }}{{ rfetch_tmp_file }}'
+    format: bz2
+    mode: 0600
+  changed_when: false
+
+- name: Upload
+  fetch:
+    src: '{{ rfetch_tmp_dir }}{{ rfetch_tmp_file }}'
+    dest: '{{ rfetch_des }}/'
+    flat: yes
+  changed_when: false
+
+- name: Delete temp src
+  file:
+    path: '{{ rfetch_tmp_dir }}{{ rfetch_tmp_file }}'
+    state: absent
+  changed_when: false
+
+- name: Extract
+  connection: local
+  unarchive:
+    src: '{{ rfetch_des }}/{{ rfetch_tmp_file }}'
+    dest: '{{ rfetch_des }}/'
+
+- name: Delete temp des
+  connection: local
+  file:
+    path: '{{ rfetch_des }}/{{ rfetch_tmp_file }}'
+    state: absent
+  become: false
+  changed_when: false
