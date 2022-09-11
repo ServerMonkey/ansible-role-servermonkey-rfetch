@@ -12,12 +12,14 @@
     path: '{{ rfetch_des }}'
   register: rfetch_des_path
   failed_when: rfetch_des_path.stat.exists == False
+  become: false
 
 - name: Set temp file ID
   connection: local
   shell: tr -dc 0-9 </dev/urandom | head -c 8 ; echo ''
   register: rfetch_id
   changed_when: false
+  become: false
 
 - name: Set temp file
   set_fact:
@@ -49,6 +51,7 @@
   unarchive:
     src: '{{ rfetch_des }}/{{ rfetch_tmp_file }}'
     dest: '{{ rfetch_des }}/'
+  become: false
 
 - name: Delete temp des
   connection: local
