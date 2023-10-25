@@ -1,1 +1,0 @@
-Recursivly copy folder from remote host to the ansible host
